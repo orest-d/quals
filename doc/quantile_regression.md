@@ -60,7 +60,7 @@ $$\mathbf{a} = (\mathbf{X}^T\mathbf{X})^{-1}\mathbf{X}^T\mathbf{y} = \mathbf{A}^
 The nice think about linear least squares is, that it is a simple algebra
 giving the result without any iterations.
 
-## Analytical formula for quantile regression
+## Analytical regression formula with 1 parameter for an asymetric fitness function 
 
 The main trick of the quantile regression is that it is using an asymetric fitness function,
 so that points above the regression function $f(\mathbf{X})$
@@ -94,12 +94,20 @@ $$
 = \sum_s 3cX_s^3a^2 - 6cX_s^2y_sa + 3cX_sy_s^2 + 2X_s^2a-2X_sy_s =
 $$
 $$
-= \left[3c\sum_s X_s^3\right]a^2 + \left[\sum_s 2X_s^2- 6cX_s^2y_s\right]a + \left[\sum_s3cX_sy_s^2 -2X_sy_s\right] = 0
+= \left[3c\sum_s X_s^3\right]a^2 + \left[\sum_s 2X_s^2- 6cX_s^2y_s\right]a + \left[\sum_s3cX_sy_s^2 -2X_sy_s\right]
 $$
-This is obviously a quadratic equation in $a$, which is easily solvable - and we can get an analytic solution again.
+$$
+= \left[3c\sum_s X_s^3\right]a^2 + \left[\sum_s 2X_s^2(1 - 3cy_s)\right]a + \left[\sum_s X_sy_s(3cy_s -2)\right] = 0
+$$
+This is obviously a quadratic equation in $a$, which is easily solvable - and we can get an analytic solution
+as for the linear least squares.
 If you are wondering about two roots - the one that we want corresponds
-to the local minimum of $F$, the other one corresponds to the local maximum.
+to the local minimum of $F$ (that's the one we want), the other one corresponds to the local maximum.
 
+Unfortunately this works only if the problem is one dimensional (i.e. if we only have a single feature).
+The problem gets more complicated in the multidimensional case.
+
+## Multidimensional case with a cubic fitness function 
 To find the minimum in a general case, we need to find the partial derivatives after parameters $a_k$:
 $$
 \frac{\partial}{\partial a_k}F
@@ -116,12 +124,93 @@ $$
 $$
 = \sum_s \left(\sum_i X_{si}a_i - y_s\right)\left(\sum_j X_{sj}a_j - y_s\right)X_{sk}
 $$
+
 $$
 = \sum_{sij} X_{si}X_{sj}X_{sk} a_i a_j - 2\sum_{si} X_{si}X_{sk}y_s a_i + \sum_{s} X_{sk}y_s^2
 $$
-As we can see, $\sum_s (3c\varepsilon_s^2+2\varepsilon_s)X_{sk}=0$ is a quadratic system
-of $k$ equations with $k$ unknowns $a_k$.
-This may be doable, but abit more complicated to solve...
+
+The whole equation then turns to a system of non-linear equations
+$$
+\forall k: \sum_{ij} A_{ijk} a_i a_j + \sum_{i} B_{ik} a_i + C_k = 0,
+$$
+where
+$$
+A_{ijk} = 3c\sum_{s}X_{si}X_{sj}X_{sk}
+$$
+$$
+B_{ik} =  \sum_{s}2X_{si}X_{sk}(1 - 3cy_s) 
+$$
+and
+$$
+C_{k} =  \sum_{s} X_{sk}y_s(3cy_s-2) 
+$$
+Solving this equation analytically might be complicated, but numerically it should be possible.
+Numerical solution would be advanageous when the number of samples $s$ is much larger
+than the number of parameters $p$, since it only requires to iterate over samples once
+to create the tensors $A_{ijk}$, $B_{ik}$ and $C_{k}$.
+
+## Minimization of the cubic fitness in a specific direction
+
+Another option to benefit from the quadraticity of the problem is to
+use it to solve minimization along a line, in a special case along a vector $\mathbf{v}$.
+In that case set $a_k \to \tilde{a_k} = \alpha v_k$, then the residual
+$$
+\varepsilon_s \to \tilde\varepsilon_s = \sum_i X_{si}v_i\alpha - y_s
+$$
+$$
+\frac{\partial}{\partial \alpha}\tilde\varepsilon_s = \sum_i X_{si}v_i
+$$
+and for minimizing $F$ along $v$
+$$
+0=\frac{\partial}{\partial \alpha}F = \frac{\partial}{\partial \alpha}\sum_s \tilde \varepsilon_s^2(c\tilde \varepsilon_s + 1)
+= \sum_{si}(2+3c\tilde\varepsilon_s)\tilde\varepsilon_sX_{si}v_i
+$$
+Expanding this equation we get
+$$
+\sum_{si}(2+3c\tilde\varepsilon_s)\tilde\varepsilon_sX_{si}v_i = \sum_{sijk}[2+3c(X_{sj}v_j\alpha - y_s)](X_{sk}v_k\alpha - y_s)X_{si}v_i = 0
+$$
+Which is a quadratic equation
+$$
+A\alpha^2 + B\alpha + C = 0,
+$$
+where
+$$A = 3c\sum_{sijk}X_{si}X_{sj}X_{sk}v_iv_jv_k$$
+$$B = \sum_{sij}2X_{si}X_{sj}v_iv_j(1-3cy_s)$$
+$$C = \sum_{si}X_{si}v_iy_s(3cy_s -2)$$
+
+We can ask again the question which of the roots of this equation should we use.
+The root should be the local minimum of $F$, i.e.
+$$\frac{\partial^2}{\partial \alpha^2}F >0$$
+$$\frac{\partial^2}{\partial \alpha^2}F = \frac{\partial}{\partial \alpha}(A\alpha^2 + B\alpha + C)=2A\alpha + B$$
+Since
+$$
+\alpha_{1,2} = \frac{-B \pm \sqrt{B^2-4AC}}{2A},
+$$
+the second derivative is
+$$
+\frac{\partial^2}{\partial \alpha^2}F = \pm\sqrt{B^2-4AC}
+$$
+The second derivative is thus positive, if we take the root $\alpha_1$ with the
+plus sign:
+$$
+\alpha = \frac{-B + \sqrt{B^2-4AC}}{2A}.
+$$ 
+One suitable special choice of the vector $\mathbf{v}$ is the gradient of $F$:
+$$
+v_k = \nabla_k F = \frac{\partial}{\partial a_k}F=2\sum_s \varepsilon_sX_{sk}=2\sum_{si}X_{si}X_{sk}a_i-y_sX_{sk}
+$$
+Finding $\alpha$ and minimizing $F$ in the direction of the gradient in an iterative scheme
+would be equivalent to knowing a perfect step size in each step of a gradient descent.
+
+Note, thant normally the gradient descent moves in the direction of the negative gradient.
+Since we solve for $\alpha$, it does not matter what multiplication factor we chose for the gradient.
+We may as well chose a (positive or negative) normalized gradient as $\mathbf{v}$. 
+
+This could (in this special case) be an even faster alternative to the [butterfly descent](optimization.md).
+Such an algorithm should in principle in each step eliminate roughly one degree of freedom,
+thus it should converge in the number of iterations proportional to the number of features $p$.
+(For a quadratic function we could get to the minimum in exactly to minimum in $p$ steps.
+We are, however, minimizing a cubic, not a quadratic function.)  
 
 ## Exponencially weighted linear least squares
 
@@ -161,8 +250,8 @@ but further away than the cubic function and it always stays positive!
 
 Interestingly, we can create the fitness function by differenciation of a simple exponencial
 $ E_s = \exp(\gamma \varepsilon_s)$. Since
-$$\frac{\partial^2}{\partial \gamma^2} E_s = \frac{\partial^2}{\partial \gamma^2} \exp(\gamma \varepsilon_s),$$
-$$F = \frac{\partial^2}{\partial \gamma^2} \sum_s E_s.$$
+$$\frac{\partial^2}{\partial \gamma^2} E_s = \frac{\partial^2}{\partial \gamma^2} \exp(\gamma \varepsilon_s) = E_s \varepsilon_s^2,$$
+$$F = \frac{\partial^2}{\partial \gamma^2} \sum_s E_s = \sum_s E_s \varepsilon_s^2.$$
 Thus 
 $$\frac{\partial}{\partial a_k}F = \frac{\partial}{\partial a_k}\frac{\partial^2}{\partial \gamma^2} \sum_s E_s,$$
 where the order of differenciations can be conviniently switched:
@@ -170,7 +259,7 @@ $$\frac{\partial}{\partial a_k}F = \sum_s \frac{\partial^2}{\partial \gamma^2}\f
 For $E_s$ we can derive that
 $$\frac{\partial}{\partial \gamma}E_s = E_s \varepsilon_s,$$
 $$\frac{\partial}{\partial \varepsilon_s}E_s = \gamma E_s,$$
-and finally
+and
 $$\frac{\partial}{\partial a_k}E_s = \gamma E_sX_{sk}.$$
 Thus
 $$\frac{\partial}{\partial a_k}F = \sum_s \frac{\partial^2}{\partial \gamma^2}\frac{\partial}{\partial a_k} E_s =$$
@@ -182,13 +271,19 @@ $$= \sum_s (2  + \gamma \varepsilon_s)\varepsilon_s E_s X_{sk}.$$
 Note that for $\gamma=0$ we get simply $\sum_s 2\varepsilon_s X_{sk}$, which is the ordinary linear least squares
 gradient.
 
-If we try to solve it analytically, it is difficult. For small $\gamma$ (i.e. linear approximation in terms of $\gamma$) we get
+It is impossible (or at least difficult) to solve the equation analytically. For small $|\gamma| \ll 1$ (i.e. linear approximation in terms of $\gamma$) we get
 $$\sum_s (2  + \gamma \varepsilon_s)\varepsilon_s E_s X_{sk}
 \approx \sum_s (2  + \gamma \varepsilon_s)(1  + \gamma \varepsilon_s)\varepsilon_sX_{sk}
 \approx \sum_s (2  + 3\gamma \varepsilon_s)\varepsilon_sX_{sk}
 $$
 This is exactly the same problem as we tried to solve for the cubic fitness with $\gamma=c$.
+In such a case we may accelerate the optimization by using the approaches described in previous sections
+(i.e. numerical optimization of the nonlinear system or analytical minimization along the gradient).
 
-We may not be able to solve the problem analytically,
-but we know the analytical gradiend, so we can use the gradient descent - or better
-the butterfly descent method to find optimal parameters.
+Due to the nature of the approximation, this may work well for $|\gamma|\ll 1$,
+but it will work less good for larger values. However, it may be suitable at the beginning of the iteration to get quickly closer
+to a reasonable set of parameters even for larger $|\gamma|$.
+
+For the final optimization we know the analytical gradiend,
+so we can use the gradient descent - or better
+the *butterfly descent* method to find optimal parameters.
