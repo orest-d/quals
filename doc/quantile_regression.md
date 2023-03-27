@@ -62,17 +62,17 @@ giving the result without any iterations.
 
 ## Analytical regression formula with 1 parameter for an asymetric fitness function 
 
-The main trick of the quantile regression is that it is using an asymetric fitness function,
+The main trick of the quantile regression is that it is using an asymmetric fitness function,
 so that points above the regression function $f(\mathbf{X})$
 are weighed more (or less) than the points below.
-What we need is some simple asymetric function with the minimum at 0.
+What we need is some simple asymmetric function with the minimum at 0.
 
 How about a cubic function $y=x^2(cx+1)$ - let's say with c=1:
 ![cubic](cubic.svg)
 
 Cubic function (orange) is quite close to a parabola $x^2$ (dashed blue line).
 (Close zero, when $x^3 \ll x^2$ the $x^3$ can be neglected.)
-Further away from zero the function becomes visibly asymetric - more shallow below and steeper above the zero.
+Further away from zero the function becomes visibly asymmetric - more shallow below and steeper above the zero.
 This is pretty much the same trick as with the skewed absolute value.
 
 Let's try to make a *"linear least cubes"* regression:
@@ -145,7 +145,7 @@ $$
 C_{k} =  \sum_{s} X_{sk}y_s(3cy_s-2) 
 $$
 Solving this equation analytically might be complicated, but numerically it should be possible.
-Numerical solution would be advanageous when the number of samples $s$ is much larger
+Numerical solution would be advantageous when the number of samples $s$ is much larger
 than the number of parameters $p$, since it only requires to iterate over samples once
 to create the tensors $A_{ijk}$, $B_{ik}$ and $C_{k}$.
 
@@ -221,34 +221,34 @@ but rather through an "upper part" of the cloud (whatever it is).
 We could simply do a classical regression and then make the regression again,
 but only selecting the points above the first regression.
 Or - we could use a weighted regression and put a larger weight on the points "above"
-than on the points "below". (This is what quantile regression is doing via the asymetric fitness function.)
+than on the points "below". (This is what quantile regression is doing via the asymmetric fitness function.)
 There are many choices how to do it.
 The weights as a function of a residual $w(\varepsilon_s)$ should follow certain criteria though:
 
-* Weight should be defined and positive for all residuals (negative weights are possiblem, but less intuitive).
-* Weight should be a continuous function of a residual (othersise we get jumps in fitness function
+* Weight should be defined and positive for all residuals (negative weights are possible, but less intuitive).
+* Weight should be a continuous function of a residual (otherwise we get jumps in fitness function
 and the problem might be difficult to solve numerically). 
-* Weight should be a smoothly differenciable (e.g. to use the *butterfly descent* algorithm)
+* Weight should be a smoothly differentiable (e.g. to use the *butterfly descent* algorithm)
 * Weight should be small and decreasing for negative residuals, large and increasing for positive residuals (or the other way round).
 
 Cubic fitness from the previous section effectively has weights
 $w_s^{\mathrm{cubic}} = c\varepsilon_s + 1$. Thus it may easily fail the first requirement,
-unless parameter $c$ is tweaked so that all residulas are greater that $-1/c$.
+unless parameter $c$ is tweaked so that all residuals are greater that $-1/c$.
 
-The first function that comes to my ming as a good choice for a weight function
-is ... an exponencial function.
-The fithess function would look like
+The first function that comes to my mind as a good choice for a weight function
+is ... an exponential function.
+The fitness function would look like
 $$ F = \sum_s \exp(\gamma\varepsilon_s)\varepsilon_s^2$$
 
 ![exponencial fitness](exp1.svg)
 ![exponencial fitness](exp2.svg)
 
-We can compare the exponencial function (for $\gamma=1$) to a quadratic and cubic function.
-The exponencial function around zero is clearly asymetric, steeply growing on the right side
+We can compare the exponential function (for $\gamma=1$) to a quadratic and cubic function.
+The exponential function around zero is clearly asymmetric, steeply growing on the right side
 and more shallow on the left side. It beds down at some point,
 but further away than the cubic function and it always stays positive!
 
-Interestingly, we can create the fitness function by differenciation of a simple exponencial
+Interestingly, we can create the fitness function by differentiation of a simple exponencial
 $ E_s = \exp(\gamma \varepsilon_s)$. Since
 $$\frac{\partial^2}{\partial \gamma^2} E_s = \frac{\partial^2}{\partial \gamma^2} \exp(\gamma \varepsilon_s) = E_s \varepsilon_s^2,$$
 $$F = \frac{\partial^2}{\partial \gamma^2} \sum_s E_s = \sum_s E_s \varepsilon_s^2.$$
@@ -284,6 +284,70 @@ Due to the nature of the approximation, this may work well for $|\gamma|\ll 1$,
 but it will work less good for larger values. However, it may be suitable at the beginning of the iteration to get quickly closer
 to a reasonable set of parameters even for larger $|\gamma|$.
 
-For the final optimization we know the analytical gradiend,
+For the final optimization we know the analytical gradient,
 so we can use the gradient descent - or better
 the *butterfly descent* method to find optimal parameters.
+
+## Constrained quantile optimization
+
+So far we have discussed shifting the fit of the linear regression by use
+of an asymmetric fitness function.
+For a quantile regression there is one more thing important: the possibility
+to specify the quantile.
+
+For the *exponentially weighted linear least squares* this would probably
+be possible by finding the specific value for parameter $\gamma$.
+One way to achieve this would be a [bisection method](https://en.wikipedia.org/wiki/Bisection_method).
+This, however, would have a drawback of using one numerical method inside of another.
+
+Another possibility that we will explore here is 
+the [constrained optimization](https://en.wikipedia.org/wiki/Constrained_optimization),
+more specifically the [Lagrange multiplier](https://en.wikipedia.org/wiki/Lagrange_multiplier) method.
+
+In constrained optimization we need to optimize a fitness function $F$ with
+a constraint that a specified fraction of points will be above (or below) the fit -
+in other words, that a specified fraction of residuals will be positive (or negative).
+To solve this exactly, we could use a characteristic function
+$$
+\chi(x) = \left\{
+\begin{array}{lr}
+0&\ \forall x<0\\
+1&\ \forall x\ge 0 
+\end{array}\right.
+$$
+Then we could calculate the number of points above the fit as
+$$
+Q = \sum_s \chi(\varepsilon_s)
+$$
+and the quantile $q$ would be simply $Q$ divided by the total number of observations $n$.
+For a weighted regression we could use
+$$
+q = \frac{\sum_s w_s\chi(\varepsilon_s)}{\sum_s w_s}
+$$
+
+The problem with the function $\chi$ is, that it is not smooth and differentiable in zero,
+thus it is unsuitable for the Lagrange multiplier method.
+We can, however approximate the characteristic function $\chi$ with another function.
+There are many options to do that, one possibility would be the
+[sigmoid function](https://en.wikipedia.org/wiki/Sigmoid_function):
+$$
+S(kx) = \frac{1}{1+e^{-kx}},
+$$
+where $k$ is a steepness parameter, as well known as the [logistic growth rate](https://en.wikipedia.org/wiki/Logistic_function).
+![sigmoid](sigmoid.png)
+
+Steepness $k$ controls the precision: the larger the $k$ is, the better approximation of the characteristic function we get.
+The inverse steepness $1/k$ can be interpreted as a size of the transition between zero and one,
+i.e. the size of a residual that is considered so close to the fit,
+that it is not important whether it is above or below.
+
+Using the sigmoid approximation, the quantile can be expressed as
+$$
+q \approx \frac{1}{n}\sum_s \frac{1}{1+e^{-k\varepsilon_s}}
+$$
+
+Lagrange multiplier method then requires optimization of the Lagrangian function
+$$
+L(\mathbf{a},\gamma,\lambda) = F(\mathbf{a},\gamma) + \lambda\left(q-\frac{1}{n}\sum_s \frac{1}{1+e^{-k\varepsilon_s}} \right)
+$$
+
