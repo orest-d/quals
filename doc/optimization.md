@@ -240,7 +240,7 @@ to converge.
 The most problematic points are actually the points close to an axis corresponding to
 a smaller eigenvalue. (Close, but not close enough to converge quickly.)
 
-![butterfly a=5 b=1](b51.png)
+![butterfly a=5 b=1](b51.svg)
 
 Black arrows indicate the movement in the first iteration step.
 Most arrow point to the Y axis, since the X-degree of freedom is practically

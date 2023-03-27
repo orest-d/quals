@@ -15,7 +15,10 @@
    version="1.1"
    id="svg8"
    inkscape:version="0.92.3 (2405546, 2018-03-11)"
-   sodipodi:docname="b51.svg">
+   sodipodi:docname="b51.svg"
+   inkscape:export-filename="/home/orest/PycharmProjects/quals/doc/b51.png"
+   inkscape:export-xdpi="66.93"
+   inkscape:export-ydpi="66.93">
   <defs
      id="defs2">
     <marker
@@ -41,7 +44,7 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="0.7"
-     inkscape:cx="-101.38704"
+     inkscape:cx="18.956371"
      inkscape:cy="560"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
@@ -59,7 +62,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -121,11 +124,12 @@
    d="M 169.0079011482112,172.373403810507 L 99.26471774802728,157.7444946819395"
    id="path34" />
 
+
     
     path
-       style=&quot;fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none;marker-end:url(#Arrow1Lend)&quot;
-       d=&quot;M 173.45917086575332,167.8509411557132 L 99.55454159473709,154.19846293494342&quot;
-       /&gt;
+       style=fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none;marker-end:url(#Arrow1Lend)
+       d=M 173.45917086575332,167.8509411557132 L 99.55454159473709,154.19846293494342
+       /
     
     <path
    style="fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none;marker-end:url(#Arrow1Lend)"
@@ -419,10 +423,11 @@
    style="fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none;marker-end:url(#Arrow1Lend)"
    d="M 26.540829134246678,167.85094115571323 L 100.44545840526291,154.19846293494342"
    id="path180" />
-<path
-   style="fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none;marker-end:url(#Arrow1Lend)"
-   d="M 30.992098851788796,172.373403810507 L 100.73528225197272,157.7444946819395"
-   id="path182" />
+
+path
+   style=&quot;fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none;marker-end:url(#Arrow1Lend)&quot;
+   d=&quot;M 30.992098851788796,172.373403810507 L 100.73528225197272,157.7444946819395&quot;
+   id=&quot;path182&quot; /&gt;
 <path
    style="fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none;marker-end:url(#Arrow1Lend)"
    d="M 35.721239031346045,176.6044443118978 L 101.06565379065098,161.02955610282424"
@@ -1008,5 +1013,5 @@
            height="21.428572"
            x="211.42857"
            y="758.23395" /></flowRegion><flowPara
-         id="flowPara1033"></flowPara></flowRoot>  </g>
+         id="flowPara1033" /></flowRoot>  </g>
 </svg>
