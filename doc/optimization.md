@@ -1,7 +1,7 @@
 # Butterfly descent
 Orest Dubay 2000 - 2023
 
-## Introduction
+## Introduction to the algorithm
 I'd like to introduce a simple minimization algorithm that could be used
 as an alternative to the steepest descent. I am not sure if this algorithm is already known.
 Probably - but I don't know its name. Let's call it *Butterfly descent* - I'll explain later...
@@ -49,10 +49,10 @@ Matrix $\mathbf{M}$ is known as a Hessian matrix defined as a matrix of second d
 $$\frac{\partial^2}{\partial_i\partial_j}f = \frac{1}{2} \left(\mathbf{e_i}^T\mathbf{M}\mathbf{e_j}+\mathbf{e_j}^T\mathbf{M}\mathbf{e_i}\right) = M_{ij}.$$
 Thanks to the [spectral theorem](https://en.wikipedia.org/wiki/Spectral_theorem), we can use [eigenvalue devomposition](https://en.wikipedia.org/wiki/Eigendecomposition_of_a_matrix)
 to express the function $f(\mathbf{x})$ in an orthonormal basis:
-$$f(\mathbf{x}) = \frac{1}{2} (\mathbf{x}-\mathbf{x_0})^T\mathbf{O}^T\mathbf{\Lambda}\mathbf{O}(\mathbf{x}-\mathbf{x_0}),$$
-where $\mathbf{O}$ is an orthogonal matrix with eigenvectors and $\mathbf{\Lambda}$ is the diagonal matrix of eigenvalues.
+$$f(\mathbf{x}) = \frac{1}{2} (\mathbf{x}-\mathbf{x_0})^T\mathbf{O}^T\Lambda\mathbf{O}(\mathbf{x}-\mathbf{x_0}),$$
+where $\mathbf{O}$ is an orthogonal matrix with eigenvectors and $\Lambda$ is the diagonal matrix of eigenvalues.
 In a diagonal basis $\mathbf{q} = \mathbf{O}\mathbf{x}$ the quadratic form simplifies to
-$$f(\mathbf{q}) = \frac{1}{2} (\mathbf{q}-\mathbf{q_0})^T\mathbf{\Lambda}(\mathbf{q}-\mathbf{q_0}).$$
+$$f(\mathbf{q}) = \frac{1}{2} (\mathbf{q}-\mathbf{q_0})^T\Lambda(\mathbf{q}-\mathbf{q_0}).$$
 
 In other words, we can rotate the coordinate system to such a orientation,
 that is aligened with the main axes of the elipsoidal isosurface around a function extreme.
@@ -72,7 +72,7 @@ how to decide on the step size in an elongated valey:
 * But when the valey is narrow but long - then it takes many steps to walk to the bottom.
 
 Mathematically the number of steps in the steepest descent is proportional to the ratio
-of the highest and lovest eigenvalue of $\mathbf{\Lambda}$, which in our 2d case is $a/b$.
+of the highest and lovest eigenvalue of $\Lambda$, which in our 2d case is $a/b$.
 Better algorithms try to do ... better.
 
 ## Knowing the Hessian
@@ -148,7 +148,7 @@ $$a \approx \frac{|\mathbf{M}\mathbf{M}\mathbf{x}|}{|\mathbf{M}\mathbf{x}|}$$
 Note that analogously we can justify the approximation of the largest Hessian eigenvalue in a general multi-dimensional case:
 $$
 \frac{|\mathbf{M}\mathbf{M}\mathbf{q}|}{|\mathbf{M}\mathbf{q}|}
-=\frac{|\mathbf{O}^T\mathbf{\Lambda}^2\mathbf{O}\mathbf{q}|}{|\mathbf{O}^T\mathbf{\Lambda}\mathbf{O}\mathbf{q}|}
+=\frac{|\mathbf{O}^T\Lambda^2\mathbf{O}\mathbf{q}|}{|\mathbf{O}^T\Lambda\mathbf{O}\mathbf{q}|}
 = \frac{\sqrt{\sum_i \lambda_i^4q_i^2}}{\sqrt{\sum_i \lambda_i^2q_i^2}} = 
  \lambda_{max} \frac{\sqrt{\sum_i \lambda_i^4/\lambda_{max}^4 q_i^2}}{\sqrt{\sum_i \lambda_i^2/\lambda_{max}^2q_i^2}}
 \approx \lambda_{max}
@@ -240,7 +240,7 @@ to converge.
 The most problematic points are actually the points close to an axis corresponding to
 a smaller eigenvalue. (Close, but not close enough to converge quickly.)
 
-![butterfly a=5 b=1](b51.svg)
+![butterfly a=5 b=1](b51.png)
 
 Black arrows indicate the movement in the first iteration step.
 Most arrow point to the Y axis, since the X-degree of freedom is practically

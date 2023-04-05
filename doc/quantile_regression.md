@@ -8,6 +8,7 @@ Regression models typically try to capture a relation
 $$y = f(\mathbf{x})$$
 But what if we need something slightly different, for example
 $$y \leq f(\mathbf{x}).$$
+
 Then we can use [quantile regression](https://en.wikipedia.org/wiki/Quantile_regression).
 
 I got recently interested in quantile regression
@@ -21,7 +22,9 @@ I like linear models. When I explored the quantile linear models
 I found that it is mostly using a quite natural, but not very imaginative loss function.
 Most popular is a function that is like the absolute value (see [LAD](https://en.wikipedia.org/wiki/Least_absolute_deviations)), but one side
 is steeper than the other.
-![abs(x)](abs.svg)
+
+![abs(x)](abs.png)
+
 Unlike least squares, neither the LAD nor typical quantile regression approaches have
 an analytical solution. That bothered me and I've started to explore the problem.
 
@@ -30,7 +33,7 @@ an analytical solution. That bothered me and I've started to explore the problem
 Let's start with plain linear least squares:
 We have input features (independent variable) $X_{sp}$ and dependent variable $y_s$,
 where $s$ index runs over samples and $p$ over the parameters.
-Residuals measure the deviation of the actual observation $\y_s$ and
+Residuals measure the deviation of the actual observation $y_s$ and
 fit (regression-based prediction):
 $$ \varepsilon_s = \sum_p X_{sp}a_p - y_s$$
 Though this can be elegantly expressed in matrix form simply as
@@ -68,7 +71,8 @@ are weighed more (or less) than the points below.
 What we need is some simple asymmetric function with the minimum at 0.
 
 How about a cubic function $y=x^2(cx+1)$ - let's say with c=1:
-![cubic](cubic.svg)
+
+![cubic](cubic.png)
 
 Cubic function (orange) is quite close to a parabola $x^2$ (dashed blue line).
 (Close zero, when $x^3 \ll x^2$ the $x^3$ can be neglected.)
@@ -238,10 +242,11 @@ unless parameter $c$ is tweaked so that all residuals are greater that $-1/c$.
 The first function that comes to my mind as a good choice for a weight function
 is ... an exponential function.
 The fitness function would look like
-$$ F = \sum_s \exp(\gamma\varepsilon_s)\varepsilon_s^2$$
+$$F = \sum_s \exp(\gamma\varepsilon_s)\varepsilon_s^2$$
 
-![exponencial fitness](exp1.svg)
-![exponencial fitness](exp2.svg)
+![exponencial fitness](exp1.png)
+
+![exponencial fitness](exp2.png)
 
 We can compare the exponential function (for $\gamma=1$) to a quadratic and cubic function.
 The exponential function around zero is clearly asymmetric, steeply growing on the right side
@@ -249,7 +254,7 @@ and more shallow on the left side. It beds down at some point,
 but further away than the cubic function and it always stays positive!
 
 Interestingly, we can create the fitness function by differentiation of a simple exponencial
-$ E_s = \exp(\gamma \varepsilon_s)$. Since
+$E_s = \exp(\gamma \varepsilon_s)$. Since
 $$\frac{\partial^2}{\partial \gamma^2} E_s = \frac{\partial^2}{\partial \gamma^2} \exp(\gamma \varepsilon_s) = E_s \varepsilon_s^2,$$
 $$F = \frac{\partial^2}{\partial \gamma^2} \sum_s E_s = \sum_s E_s \varepsilon_s^2.$$
 Thus 
@@ -345,9 +350,54 @@ Using the sigmoid approximation, the quantile can be expressed as
 $$
 q \approx \frac{1}{n}\sum_s \frac{1}{1+e^{-k\varepsilon_s}}
 $$
+The constraint can be expressed as $C=0$ where
+$$C=q-\frac{1}{n}\sum_s \frac{1}{1+e^{-k\varepsilon_s}}$$
 
 Lagrange multiplier method then requires optimization of the Lagrangian function
 $$
-L(\mathbf{a},\gamma,\lambda) = F(\mathbf{a},\gamma) + \lambda\left(q-\frac{1}{n}\sum_s \frac{1}{1+e^{-k\varepsilon_s}} \right)
+L(\mathbf{a},\gamma,\lambda) = F(\mathbf{a},\gamma) + \lambda C = F(\mathbf{a},\gamma) + \lambda\left(q-\frac{1}{n}\sum_s \frac{1}{1+e^{-k\varepsilon_s}} \right)
 $$
 
+The minimum with the constraint becomes the minimum of the Lagrangian function.
+The minimum is reached when the gradient of the Lagrangian - i.e.
+partial derivatives after all its parameters $a_i$, $\gamma$ and $\lambda$ becomes zero.
+
+As before, we can use similar substitution of the exponential function:
+$$E_s(\beta) = \exp(\beta\varepsilon_s)$$
+$$\frac{\partial}{\partial a_p}E_s(\beta) = \beta X_{ps}\exp(\beta\varepsilon_s)=E_s(\beta) \beta X_{ps}$$
+$$\frac{\partial}{\partial \beta}E_s(\beta) = \varepsilon_s\exp(\beta\varepsilon_s) = E_s(\beta)\varepsilon_s$$
+$$\frac{\partial}{\partial \lambda}E_s(\beta) = 0$$
+
+$$
+L(\mathbf{a},\gamma,\lambda) = \frac{\partial^2}{\partial \gamma^2}\sum_s E_s(\gamma) + \lambda C
+$$
+Partial derivative of $L$ after $\lambda$ is simply the constraint:
+$$\frac{\partial}{\partial \lambda}L = C = 0$$ 
+Partial derivative of $L$ after $\gamma$ leads to
+$$\frac{\partial}{\partial \gamma}L = \frac{\partial^3}{\partial \gamma^3}\sum_s E_s(\gamma) = \sum_s \varepsilon_s^3\exp(\gamma \varepsilon_s)$$ 
+Assuming that we fix the model parameters $a_p$, the condition
+$$\frac{\partial}{\partial \gamma}L = 0$$
+tries to find an optimal $\gamma$ that would harmonize the residuals above and below.
+For example if $\gamma=0$ and 
+$$\frac{\partial}{\partial \gamma}L > 0,$$
+that would mean that $\sum_s \varepsilon_s^3 >0$, i.e. the residuals tend to be more positive
+than negative. Minimization of $L$ would mean a step in the opposite direction
+of the gradient and thus it would mean, that $\gamma$ should be reduced.
+Reduced $\gamma$, i.e. $\gamma<0$ would overweight the negative residuals and underweight
+the positive residuals.
+
+Interestingly, this process can be done even without the constraint $C$.
+It would lead to a special type of a weighted model where not only the sum of squares of the residuals
+would be minimal, but as well the (weighted) sum of the cubes of residuals would be zero.
+This may be interpreted as a form of bias reduction.
+
+
+Derivative of the constrain term $C$ by $a_p$ is  then
+$$\frac{\partial}{\partial a_p}C =$$ 
+$$=\frac{\partial}{\partial a_p}\left(q-\frac{1}{n}\sum_s \frac{1}{1+e^{-k\varepsilon_s}} \right) = $$ 
+$$=\frac{\partial}{\partial a_p}\left(q-\frac{1}{n}\sum_s \frac{1}{1+E_s(-k)} \right) = $$ 
+$$=\frac{1}{n}\sum_s \frac{-k X_{ps}E_s(-k)}{(1+E_s(-k))^2}$$ 
+
+
+
+$$\frac{\partial}{\partial a_i}L$$
