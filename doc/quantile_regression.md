@@ -120,8 +120,8 @@ $$
 $$
 Thus we need to solve
 $$\sum_s (2+3c\varepsilon_s)\varepsilon_sX_{sk}=0.$$
-For $c=0$ we get the simple linear least squares, but what makes the difference is
-the term besides $c$:
+For $c=0$ we get the simple linear least squares. What differentiates the cubic
+fitness from the ordinary least squares  is the term besides $c$:
 $$
 \sum_s \varepsilon_s^2X_{sk} = \sum_s \left(\sum_i X_{si}a_i - y_s\right)^2X_{sk}
 $$
@@ -442,6 +442,7 @@ $$
 $$
 a = \frac{-B + \sqrt{B^2-4AC}}{2A}.
 $$ 
+
 ### Many-dimensional cubic fitness
 Many-dimensional cubic fitness function can be optimized iteratively
 updating the coefficients $a_k^n \to a_k^{n+1}$ by moving from position $u_k=a_k^n$ in the direction of the gradient
@@ -465,3 +466,8 @@ $$\varepsilon^n_s = \sum_i X_{si}a_i^n - y_s$$
 Gradient in the direction of $\gamma$ (if relevant) is
 $$g_{\gamma}^n = \sum_s w_s(\varepsilon_s^n)^3\exp(\gamma \varepsilon_s^n)$$
 
+### Constrained quantile optimization
+$$\varepsilon^n_s = \sum_i X_{si}a_i^n - y_s$$
+$$C^n=q-\frac{1}{n}\sum_s \frac{1}{1+e^{-k\varepsilon_s^n}}$$
+$$g_{\lambda} = C$$
+$$g_{k}^n = \sum_s w_s(2  + \gamma \varepsilon_s^n)\varepsilon_s^n \exp(\gamma \varepsilon_s^n) X_{sk}.$$

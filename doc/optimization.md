@@ -26,7 +26,7 @@ This is the algorithm:
 
 - Calculate a new gradient: $\mathbf{g'}_i$ at $\mathbf{x'}_i$.
 
-- **THE MAGIC HAPPENS HERE**: Estimate step size as $s_i = \alpha \varepsilon / |\mathbf{g'}_i - \mathbf{g}_i|$
+- Estimate step size as $s_i = \alpha \varepsilon / |\mathbf{g'}_i - \mathbf{g}_i|$
 
 - Move to a new position: $\mathbf{x}_{i+1} = \mathbf{x}_{i} - s_i \mathbf{g}_i$ 
 
@@ -148,7 +148,7 @@ $$a \approx \frac{|\mathbf{M}\mathbf{M}\mathbf{x}|}{|\mathbf{M}\mathbf{x}|}$$
 Note that analogously we can justify the approximation of the largest Hessian eigenvalue in a general multi-dimensional case:
 $$
 \frac{|\mathbf{M}\mathbf{M}\mathbf{q}|}{|\mathbf{M}\mathbf{q}|}
-=\frac{|\mathbf{O}^T\Lambda^2\mathbf{O}\mathbf{q}|}{|\mathbf{O}^T\Lambda\mathbf{O}\mathbf{q}|}
+=\frac{|\Lambda^2\mathbf{q}|}{|\Lambda\mathbf{q}|}
 = \frac{\sqrt{\sum_i \lambda_i^4q_i^2}}{\sqrt{\sum_i \lambda_i^2q_i^2}} = 
  \lambda_{max} \frac{\sqrt{\sum_i \lambda_i^4/\lambda_{max}^4 q_i^2}}{\sqrt{\sum_i \lambda_i^2/\lambda_{max}^2q_i^2}}
 \approx \lambda_{max}
