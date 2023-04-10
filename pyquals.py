@@ -40,9 +40,13 @@ class CubicQuantile1D:
 
 
 class ExpQuantile:
-    def __init__(self, gamma=0.0):
+    def __init__(self, gamma=0.0,n_steps=100, algo="butterfly_descent", epsilon=1e-5, alpha=1.0):
         self.a = None
         self.gamma = gamma
+        self.n_steps=n_steps
+        self.algo=algo
+        self.epsilon = epsilon
+        self.alpha=alpha
 
     def fit_ls(self, X, y):
         n = X.shape[1]
@@ -68,14 +72,45 @@ class ExpQuantile:
         gn = np.sqrt(np.sum(g*g))
         self.a -= step*g/gn
 
+    def butterfly_descent_step(self, X, y, epsilon=1e-5, alpha=1.0):
+        g = self.gradient(X, y)
+        gn = np.sqrt(np.sum(g*g))
+        a_bar = self.a + (epsilon/gn)*g
+        g_bar = self.gradient(X,y,a=a_bar)
+        dg = g-g_bar
+        dgn = np.sqrt(np.sum(dg*dg))
+        if dgn>epsilon:
+            step = alpha*epsilon/dgn
+        else:
+            step = epsilon/gn
+        self.a -= step*g
+
     def fit(self, X, y):
         if self.a is None:
             self.fit_ls(X, y)
-        for i in range(10000):
-            self.gradient_descent_step(X, y)
+        if self.algo == "gradient_descent":
+            for i in range(self.n_steps):
+                self.gradient_descent_step(X, y, step=self.epsilon)
+        elif self.algo == "butterfly_descent":
+            for i in range(self.n_steps):
+                self.butterfly_descent_step(X, y, epsilon=self.epsilon, alpha=self.alpha)
+        elif self.algo == "butterfly_descent_acc6":
+            gamma=self.gamma
+            for n in [15,10,6,4,2,1]:
+                self.gamma=gamma/n
+                for i in range(int(self.n_steps/6)):
+                    self.butterfly_descent_step(X, y, epsilon=self.epsilon, alpha=self.alpha/n)
+        else:
+            raise Exception(f"Unknown algorithm: {self.algo}")
+        self.quantile = self.calculate_quantile(X,y)
 
     def predict(self, X):
         return np.dot(X, self.a)
+
+    def calculate_quantile(self, X, y):
+        a = self.a
+        epsilon = np.dot(X, a)-y
+        return float(np.sum(epsilon>=0))/len(y)
 
 
 def ls_test():
@@ -123,7 +158,7 @@ def cubic1d_test():
 
 
 def exp2d_test():
-    N = 1000
+    N = 2000
     x = np.random.uniform(0, 100, N)
     y = x+np.random.uniform(0, 30, N)
     plt.scatter(x, y)
@@ -142,12 +177,12 @@ def exp2d_test():
     plt.plot(x_mesh, y_mesh, label=f"LS a={model.a}")
 
 #    for gamma in (-0.1,-0.05, -0.025, 0.0, 0.025, 0.05, 0.1):
-    for gamma in (-0.08, 0.0, 0.08):
-        model = ExpQuantile(gamma)
+    for gamma in (-0.15, 0.0, 0.15):
+        model = ExpQuantile(gamma, algo="butterfly_descent_acc6", n_steps=200000, alpha=1.0)
         model.fit(X, y)
-        print(f"gamma={gamma} a={model.a}")
+        print(f"gamma={gamma} q={model.quantile} a={model.a}")
         y_mesh = model.predict(X_mesh)
-        plt.plot(x_mesh, y_mesh, label=f"gamma={gamma} a={model.a}")
+        plt.plot(x_mesh, y_mesh, label=f"gamma={gamma} q={model.quantile} a={model.a}")
     plt.legend()
     plt.show()
 
