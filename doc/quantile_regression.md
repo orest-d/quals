@@ -156,15 +156,18 @@ to create the tensors $A_{ijk}$, $B_{ik}$ and $C_{k}$.
 ## Minimization of the cubic fitness in a specific direction
 
 Another option to benefit from the quadraticity of the problem is to
-use it to solve minimization along a line, in a special case along a vector $\mathbf{v}$.
-In that case set $a_k \to \tilde{a_k} = \alpha v_k$, then the residual
+use it to solve minimization along the direction $v$ and intersecting a point $u$.  
+In that case set $a_k \to \tilde{a_k} = u_k + \alpha v_k$, then the residual
 $$
-\varepsilon_s \to \tilde\varepsilon_s = \sum_i X_{si}v_i\alpha - y_s
+\varepsilon_s \to \tilde\varepsilon_s = \sum_i X_{si}(u_i+\alpha v_i) - y_s = \varepsilon_s^0 + \alpha \sum_s X_{si}v_i,
 $$
+where
+$$ \varepsilon^0_s = \sum_i X_{si}u_i - y_s$$
+is the residual at point $u$. The derivative after $\alpha$ is
 $$
 \frac{\partial}{\partial \alpha}\tilde\varepsilon_s = \sum_i X_{si}v_i
 $$
-and for minimizing $F$ along $v$
+Minimizing $F$ along $\tilde a$ requires
 $$
 0=\frac{\partial}{\partial \alpha}F = \frac{\partial}{\partial \alpha}\sum_s \tilde \varepsilon_s^2(c\tilde \varepsilon_s + 1)
 = \sum_{si}(2+3c\tilde\varepsilon_s)\tilde\varepsilon_sX_{si}v_i
@@ -178,6 +181,11 @@ $$
 A\alpha^2 + B\alpha + C = 0,
 $$
 where
+$$A = 3c\sum_{sijk}X_{si}X_{sj}X_{sk}v_iv_jv_k$$
+$$B = \sum_{sij}2X_{si}X_{sj}v_iv_j(1+3c \varepsilon^0_s)$$
+$$C = \sum_{si}X_{si}v_i\varepsilon^0_s(2+3c\varepsilon^0_s)$$
+
+For $u_k=0$ this leads to
 $$A = 3c\sum_{sijk}X_{si}X_{sj}X_{sk}v_iv_jv_k$$
 $$B = \sum_{sij}2X_{si}X_{sj}v_iv_j(1-3cy_s)$$
 $$C = \sum_{si}X_{si}v_iy_s(3cy_s -2)$$
@@ -273,7 +281,7 @@ $$= \sum_s \frac{\partial}{\partial \gamma}(E_s  + \gamma E_s \varepsilon_s)X_{s
 $$= \sum_s \frac{\partial}{\partial \gamma}(1  + \gamma \varepsilon_s)E_s X_{sk} =$$
 $$= \sum_s \varepsilon_s E_s X_{sk} + (1  + \gamma \varepsilon_s)\varepsilon_s E_s X_{sk} =$$
 $$= \sum_s (2  + \gamma \varepsilon_s)\varepsilon_s E_s X_{sk}.$$
-Note that for $\gamma=0$ we get simply $\sum_s 2\varepsilon_s X_{sk}$, which is the ordinary linear least squares
+Note that for $\gamma=0$ this reduces to $\sum_s 2\varepsilon_s X_{sk}$, which is the ordinary linear least squares
 gradient.
 
 It is impossible (or at least difficult) to solve the equation analytically. For small $|\gamma| \ll 1$ (i.e. linear approximation in terms of $\gamma$) we get
@@ -293,11 +301,29 @@ For the final optimization we know the analytical gradient,
 so we can use the gradient descent - or better
 the *butterfly descent* method to find optimal parameters.
 
+## Optimizing gamma
+
+Partial derivative of $F$ after $\gamma$ leads to
+$$\frac{\partial}{\partial \gamma}F = \frac{\partial^3}{\partial \gamma^3}\sum_s E_s(\gamma) = \sum_s \varepsilon_s^3\exp(\gamma \varepsilon_s)$$ 
+
+Condition
+$$\sum_s \varepsilon_s^3\exp(\gamma \varepsilon_s) = 0$$
+effectively tries to find optimize $\gamma$ and thus the weights $\exp(\gamma \varepsilon_s)$
+in such a way that would harmonize the cubes of residuals above and below zero.
+
+This is similar to removing bias: Note that the least squares method does minimize the sum
+of squares of residuals, but it does not provide any guarantees
+regarding the bias.  The bias can be expressed as an average residual $(1/n)\sum_s\varepsilon_s$.
+Minimizing the fitness function with respect to $\gamma$ will not minimize the residuals,
+but rather the cube of residuals. This can be interpreted as finding weights,
+that would balance out and thus reduce the bias stemming from the large residuals,
+while the impact of small residual will be negligible or small. 
+
 ## Constrained quantile optimization
 
 So far we have discussed shifting the fit of the linear regression by use
 of an asymmetric fitness function.
-For a quantile regression there is one more thing important: the possibility
+Quantile regression algorithms normally offer an option
 to specify the quantile.
 
 For the *exponentially weighted linear least squares* this would probably
@@ -305,7 +331,7 @@ be possible by finding the specific value for parameter $\gamma$.
 One way to achieve this would be a [bisection method](https://en.wikipedia.org/wiki/Bisection_method).
 This, however, would have a drawback of using one numerical method inside of another.
 
-Another possibility that we will explore here is 
+Another possibility to find the specified quantile is 
 the [constrained optimization](https://en.wikipedia.org/wiki/Constrained_optimization),
 more specifically the [Lagrange multiplier](https://en.wikipedia.org/wiki/Lagrange_multiplier) method.
 
@@ -373,31 +399,69 @@ L(\mathbf{a},\gamma,\lambda) = \frac{\partial^2}{\partial \gamma^2}\sum_s E_s(\g
 $$
 Partial derivative of $L$ after $\lambda$ is simply the constraint:
 $$\frac{\partial}{\partial \lambda}L = C = 0$$ 
+
 Partial derivative of $L$ after $\gamma$ leads to
-$$\frac{\partial}{\partial \gamma}L = \frac{\partial^3}{\partial \gamma^3}\sum_s E_s(\gamma) = \sum_s \varepsilon_s^3\exp(\gamma \varepsilon_s)$$ 
-Assuming that we fix the model parameters $a_p$, the condition
-$$\frac{\partial}{\partial \gamma}L = 0$$
-tries to find an optimal $\gamma$ that would harmonize the residuals above and below.
-For example if $\gamma=0$ and 
-$$\frac{\partial}{\partial \gamma}L > 0,$$
-that would mean that $\sum_s \varepsilon_s^3 >0$, i.e. the residuals tend to be more positive
-than negative. Minimization of $L$ would mean a step in the opposite direction
-of the gradient and thus it would mean, that $\gamma$ should be reduced.
-Reduced $\gamma$, i.e. $\gamma<0$ would overweight the negative residuals and underweight
-the positive residuals.
+$$\frac{\partial}{\partial \gamma}L = \frac{\partial^3}{\partial \gamma^3}\sum_s E_s(\gamma) = \sum_s \varepsilon_s^3\exp(\gamma \varepsilon_s),$$ 
+Which we discussed in the previous section.
 
-Interestingly, this process can be done even without the constraint $C$.
-It would lead to a special type of a weighted model where not only the sum of squares of the residuals
-would be minimal, but as well the (weighted) sum of the cubes of residuals would be zero.
-This may be interpreted as a form of bias reduction.
-
+Tha last part is the derivative of $L$ by $a_p$, which has two terms:
+$$\frac{\partial}{\partial a_p}L = 
+\frac{\partial^3}{\partial \gamma^2\partial a_p}\sum_s E_s(\gamma) + \lambda \frac{\partial}{\partial a_p}C 
+$$
+The first term we have solved earlier:
+$$\frac{\partial^3}{\partial \gamma^2\partial a_p}\sum_s E_s(\gamma) = 
+\sum_s (2  + \gamma \varepsilon_s)\varepsilon_s E_s(\gamma) X_{sp}.$$
 
 Derivative of the constrain term $C$ by $a_p$ is  then
 $$\frac{\partial}{\partial a_p}C =$$ 
 $$=\frac{\partial}{\partial a_p}\left(q-\frac{1}{n}\sum_s \frac{1}{1+e^{-k\varepsilon_s}} \right) = $$ 
 $$=\frac{\partial}{\partial a_p}\left(q-\frac{1}{n}\sum_s \frac{1}{1+E_s(-k)} \right) = $$ 
-$$=\frac{1}{n}\sum_s \frac{-k X_{ps}E_s(-k)}{(1+E_s(-k))^2}$$ 
+$$=\frac{1}{n}\sum_s \frac{-k X_{ps}E_s(-k)}{(1+E_s(-k))^2}$$
 
 
+## Summary of algorithms
+This section provides a summary of terms that need to be evaluated when implementing the above-mentioned
+algorithms.
 
-$$\frac{\partial}{\partial a_i}L$$
+### Ordinary/weighted least squares
+$$A_{pk} = \sum_s w_s X_{sp}X_{sk}$$
+$$b_k = \sum_s w_s X_{sk}y_{s}$$
+$$\mathbf{a} = (\mathbf{X}^T\mathbf{X})^{-1}\mathbf{X}^T\mathbf{y} = \mathbf{A}^{-1}\mathbf{b}.$$
+$$a_p = \sum_i(\mathbf{A}^{-1})_{pi}b_i$$
+
+### One-dimensional cubic fitness
+$$
+A = 3\gamma\sum_s w_s X_s^3
+$$
+$$
+B = 2\sum_s w_sX_s^2(1 - 3\gamma y_s)
+$$
+$$
+C = \sum_s w_sX_sy_s(3\gamma y_s -2)
+$$
+$$
+a = \frac{-B + \sqrt{B^2-4AC}}{2A}.
+$$ 
+### Many-dimensional cubic fitness
+Many-dimensional cubic fitness function can be optimized iteratively
+updating the coefficients $a_k^n \to a_k^{n+1}$ by moving from position $u_k=a_k^n$ in the direction of the gradient
+$$v_k^n = 2\sum_s w_s \varepsilon_s^nX_{sk},$$
+where $\varepsilon^n_s$ is the residual for step $n$ and sample $s$:
+$$\varepsilon^n_s = \sum_i X_{si}a_i^n - y_s$$
+Coefficients of the quadratic equations are:
+$$A^n = 3\gamma\sum_{sijk}w_sX_{si}X_{sj}X_{sk}v_i^nv_j^nv_k^n$$
+$$B^n = 2\sum_{sij}w_sX_{si}X_{sj}v_i^nv_j^n(1+3\gamma \varepsilon^n_s)$$
+$$C^n = \sum_{si}w_sX_{si}v_i^n\varepsilon^n_s(2+3\gamma\varepsilon^n_s)$$
+$$
+S^n = \frac{-B^n + \sqrt{(B^n)^2-4A^nC^n}}{2A^n}.
+$$ 
+$$a_k^{n+1} = a_k^{n} + S^n v_k^n$$
+
+### Exponentially weighted linear least squares
+Gradient for the exponentially weighted least squares fitness is
+$$g_k^n = \sum_s w_s(2  + \gamma \varepsilon_s^n)\varepsilon_s^n \exp(\gamma \varepsilon_s^n) X_{sk}.$$
+where $\varepsilon^n_s$ is the residual for step $n$ and sample $s$:
+$$\varepsilon^n_s = \sum_i X_{si}a_i^n - y_s$$
+Gradient in the direction of $\gamma$ (if relevant) is
+$$g_{\gamma}^n = \sum_s w_s(\varepsilon_s^n)^3\exp(\gamma \varepsilon_s^n)$$
+
